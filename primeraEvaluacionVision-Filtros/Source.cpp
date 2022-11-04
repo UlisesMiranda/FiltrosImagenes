@@ -17,6 +17,7 @@ Mat convertirEscalaGrisesNTSC(Mat imagen) {
 
     double azul, verde, rojo;
 
+    //Convertimos a escala de grises usando NTSC
     for (int i = 0; i < filasOriginal; i++)
     {
         for (int j = 0; j < columnasOriginal; j++)
@@ -44,6 +45,7 @@ vector<vector<float>> mascaraGaussiana(int mascSize, float sigma) {
 
     cout << "LOS VALORES DEL KERNEL DE GAUSS: " << endl;
 
+    //Realizamos la operacion de la formula de gauss
     for (int x = -limite; x <= limite; x++) {
         for (int y = -limite; y <= limite; y++) {
 
@@ -58,6 +60,7 @@ vector<vector<float>> mascaraGaussiana(int mascSize, float sigma) {
         }
     }
 
+    //Normalizamos los valores obtenidos de la mascara de gauss dividienlo entre la sumatoria de sus valores
     for (int i = 0; i < mascSize; i++) {
         for (int j = 0; j < mascSize; j++) {
             mascara[i][j] /= sum;
@@ -65,24 +68,11 @@ vector<vector<float>> mascaraGaussiana(int mascSize, float sigma) {
     }
 
     return mascara;
-}
-
-int getMin(int array[], int N) {
-
-    int min = 0;
-    for (size_t i = 0; i < N; i++)
-    {
-        if (array[i] < min) {
-            min = array[i];
-        }
-    }
-
-    return min;
-}
- 
+} 
 
 vector<vector<float>> mascaraGy() {
 
+    //Mascara de Gy
     vector<vector<float>> mascara(3, vector<float>(3, 0));
 
     mascara[0][0] = -1;
@@ -102,6 +92,7 @@ vector<vector<float>> mascaraGy() {
 
 vector<vector<float>> mascaraGx() {
 
+    //Mascara de Gx
     vector<vector<float>> mascara(3, vector<float>(3, 0));
 
     mascara[0][0] = -1;
@@ -124,6 +115,7 @@ Mat matrizRelleno(int filas, int columnas, int mascSize)
     int diferenciaBordes = mascSize - 1;
     Mat matriz(filas + diferenciaBordes, columnas + diferenciaBordes, CV_8UC1);
 
+    //Creamos una matriz rellena de ceros con los espacios de los margenes extendidos
     for (int i = 0; i < filas + diferenciaBordes; i++)
     {
         for (int j = 0; j < columnas + diferenciaBordes; j++)
@@ -141,6 +133,7 @@ Mat copiarImgARelleno(Mat bordes, Mat original, int mascSize)
     int filas = bordes.rows;
     int columnas = bordes.cols;
 
+    //Recorremos nuestra matriz de bordes extendidos y pegamos los valores de la intensidad de nuestra imagen original
     for (int i = diferenciaBordes; i < filas - diferenciaBordes; i++)
     {
         for (int j = diferenciaBordes; j < columnas - diferenciaBordes; j++)
@@ -158,6 +151,7 @@ float convolucionPixel(Mat matrizConBordes, vector<vector<float>> mascara, int m
 
     float sumatoriaFiltro = 0.0;
 
+    //Recorremos nuestra mascara y realizamos la sumatoria
     for (int i = -limites; i <= limites; i++) {
         for (int j = -limites; j <= limites; j++) {
 
@@ -182,6 +176,8 @@ Mat aplicarFiltroImagen(Mat imagenOriginal, Mat matrizConBordes, vector<vector<f
 
     for (int i = 0; i < filas; i++) {
         for (int j = 0; j < columnas; j++) {
+
+            //Adquirimos la operacion de la convolucion sobre el pixel
             float val = abs(static_cast<int>(convolucionPixel(matrizConBordes, mascara, mascSize, i, j)));
             imagenFiltroAplicado.at<uchar>(Point(i, j)) = val;
         }
@@ -206,6 +202,7 @@ Mat imagenFiltroSobel(Mat imagenGx, Mat imagenGy) {
             valGx = imagenGx.at<uchar>(Point(j, i));
             valGy = imagenGy.at<uchar>(Point(j, i));
 
+            //Realizamos la operacion de la magnitud de G por pixel
             intensidad = sqrt(pow(valGx, 2) + pow(valGy, 2));
 
             sobel.at<uchar>(Point(j, i)) = uchar(intensidad);
@@ -229,6 +226,7 @@ vector<vector<double>> calcularDirecciones(Mat imagenGx, Mat imagenGy) {
             valGx = imagenGx.at<uchar>(Point(j, i));
             valGy = imagenGy.at<uchar>(Point(j, i));
 
+            //Obtenemos el angulo del pixel
             direcciones[i][j] = (atan(valGy / valGx) * 180.0) / M_PI; //grados sexagesimales
 
             if (direcciones[i][j] < 0) { 
