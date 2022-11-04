@@ -354,17 +354,17 @@ Mat hysteresis( Mat imgHysteresis, float upperThresholdPorcentaje, float lowThre
 
     Mat imgHysteresisFinal(filas, columnas, CV_32F);
 
-    for (int i = 0; i < filas; i++)
+    for (int i = 1; i < filas - 1; i++)
     {
-        for (int j = 0; j < columnas; j++)
+        for (int j = 1; j < columnas - 1; j++)
         {
-            if (float(imgHysteresis.at<uchar>(Point(j + 1, i + 1))) == round(lowThreshold))
+            if (float(imgHysteresis.at<uchar>(Point(j , i ))) == round(lowThreshold))
             {
                 //Verificamos si los vecinos son fuertes
-                if (float(imgHysteresis.at<uchar>(Point(j + 1, (i - 1) + 1))) == 255 || float(imgHysteresis.at<uchar>(Point(j + 1, (i + 1) + 1))) == 255 ||
-                    float(imgHysteresis.at<uchar>(Point((j - 1) + 1, i + 1))) == 255 || float(imgHysteresis.at<uchar>(Point((j + 1) + 1, i + 1))) == 255 ||
-                    float(imgHysteresis.at<uchar>(Point((j - 1) + 1, (i + 1) + 1))) == 255 || float(imgHysteresis.at<uchar>(Point((j + 1) + 1, (i - 1) + 1))) == 255 ||
-                    float(imgHysteresis.at<uchar>(Point((j - 1) + 1, (i - 1) + 1))) == 255 || float(imgHysteresis.at<uchar>(Point((j + 1) + 1, (i + 1) + 1))) == 255) {
+                if (float(imgHysteresis.at<uchar>(Point(j + 1, (i - 1)))) == 255 || float(imgHysteresis.at<uchar>(Point(j + 1, (i + 1)))) == 255 ||
+                    float(imgHysteresis.at<uchar>(Point((j - 1), i + 1))) == 255 || float(imgHysteresis.at<uchar>(Point((j + 1), i + 1))) == 255 ||
+                    float(imgHysteresis.at<uchar>(Point((j - 1), (i + 1)))) == 255 || float(imgHysteresis.at<uchar>(Point((j + 1), (i - 1) + 1))) == 255 ||
+                    float(imgHysteresis.at<uchar>(Point((j - 1), (i - 1)))) == 255 || float(imgHysteresis.at<uchar>(Point((j + 1), (i + 1) + 1))) == 255) {
 
                     imgHysteresisFinal.at<float>(Point(j, i)) = 255;
                 }
@@ -374,7 +374,7 @@ Mat hysteresis( Mat imgHysteresis, float upperThresholdPorcentaje, float lowThre
 
             }
             else {
-                imgHysteresisFinal.at<float>(Point(j, i)) = float(imgHysteresis.at<uchar>(Point(j + 1, i + 1)));
+                imgHysteresisFinal.at<float>(Point(j -1, i -1)) = float(imgHysteresis.at<uchar>(Point(j, i)));
             }
         }
     }
