@@ -9,6 +9,29 @@
 using namespace cv;
 using namespace std;
 
+Mat convertirEscalaGrisesNTSC(Mat imagen) {
+    int filasOriginal = imagen.rows;
+    int columnasOriginal = imagen.cols;
+
+    Mat imgGrisesNTSC(filasOriginal, columnasOriginal, CV_8UC1);
+
+    double azul, verde, rojo;
+
+    for (int i = 0; i < filasOriginal; i++)
+    {
+        for (int j = 0; j < columnasOriginal; j++)
+        {
+            azul = imagen.at<Vec3b>(Point(j, i)).val[0];  // B
+            verde = imagen.at<Vec3b>(Point(j, i)).val[1]; // G
+            rojo = imagen.at<Vec3b>(Point(j, i)).val[2];  // R
+
+            imgGrisesNTSC.at<uchar>(Point(j, i)) = uchar(0.299 * azul + 0.587 * verde + 0.11 * rojo);
+        }
+    }
+    return imgGrisesNTSC;
+
+}
+
 vector<vector<float>> mascaraGaussiana(int mascSize, float sigma) {
 
     int limite = (mascSize - 1) / 2;
@@ -218,6 +241,9 @@ vector<vector<double>> calcularDirecciones(Mat imagenGx, Mat imagenGy) {
 }
 
 Mat nonMaxSupression(Mat imagenSobel, vector<vector<double>> direcciones) {
+    //Me base en el algoritmo planteado en el siguiente enlace
+    //https://towardsdatascience.com/canny-edge-detection-step-by-step-in-python-computer-vision-b49c3a2d8123
+
     int filas = imagenSobel.rows;
     int columnas = imagenSobel.cols;
 
@@ -265,7 +291,7 @@ Mat nonMaxSupression(Mat imagenSobel, vector<vector<double>> direcciones) {
     return imgNonMaxSupr;
 }
 
-int intensidadMaxima(Mat imagen) {
+int getIntensidadMaxima(Mat imagen) {
     int filas = imagen.rows;
     int columnas = imagen.cols;
 
@@ -285,12 +311,12 @@ int intensidadMaxima(Mat imagen) {
 Mat hysteresis(Mat imgNonMaxSupr, float upperThresholdPorcentaje, float lowThresholdPorcentaje) {
     int filas = imgNonMaxSupr.rows;
     int columnas = imgNonMaxSupr.cols;
-
+        
     Mat imgHysteresis(filas, columnas, CV_8UC1);
 
     float upperThreshold, lowThreshold; 
 
-    upperThreshold = intensidadMaxima(imgNonMaxSupr) * upperThresholdPorcentaje; //90% of max
+    upperThreshold = getIntensidadMaxima(imgNonMaxSupr) * upperThresholdPorcentaje; //90% of max
     lowThreshold = upperThreshold * lowThresholdPorcentaje; //35% of upper
 
     //de acuerdo con las diapositivas
@@ -318,6 +344,13 @@ Mat hysteresis(Mat imgNonMaxSupr, float upperThresholdPorcentaje, float lowThres
     return imgHysteresis;
 }
 
+void imprimirTamanioImagen(Mat imagen, string tituloImagen) {
+    cout << tituloImagen << endl;
+    cout << "Filas: " << imagen.cols << endl;
+    cout << "Columnas: " << imagen.cols << endl;
+    cout << "\n";
+}
+
 
 
 int main()
@@ -328,7 +361,7 @@ int main()
     Mat imagenOriginal, imagenEscGrises;
     char imageName[] = "lena.png";
 
-    cout << "Inserte el tamaño de su mascara cuadrada: ";
+    cout << "Inserte el tamaño de su mascara gaussiana cuadrada: ";
     cin >> mascSize;
     cout << "Inserte el valor de sigma: ";
     cin >> sigma;
@@ -350,7 +383,7 @@ int main()
     vector<vector<float>> Gy = mascaraGy();
 
     //Pasamos a escala de grises
-    cvtColor(imagenOriginal, imagenEscGrises, COLOR_BGR2GRAY);
+    imagenEscGrises = convertirEscalaGrisesNTSC(imagenOriginal);
 
     //Realizamos la expansion de bordes de la imagen original
     Mat matrizConBordes = matrizRelleno(filasImagen, columnasImagen, mascSize);
@@ -360,7 +393,6 @@ int main()
     Mat imagenFiltroGaussiano = aplicarFiltroImagen(imagenEscGrises, matrizConBordes, mascGaussiana, mascSize);
 
     //Ecualizamos la imagen
-    //Mat imagenFiltroGaussianoEcualizada = ecualizarImagen(imagenFiltroGaussiano);
     Mat imagenFiltroGaussianoEcualizada;
     equalizeHist(imagenFiltroGaussiano, imagenFiltroGaussianoEcualizada); 
 
@@ -384,8 +416,16 @@ int main()
     //Realizamos la hysteresis
     Mat imgHysteresis = hysteresis(imgNonMaxSupr, 0.9, 0.35);
 
+    //Imprimimos tamaños de imagenes
+    imprimirTamanioImagen(imagenOriginal, "Imagen original:");
+    imprimirTamanioImagen(imagenEscGrises, "Imagen escala de grises:");
+    imprimirTamanioImagen(imagenFiltroGaussiano, "Imagen filtro gaussiano:");
+    imprimirTamanioImagen(imagenFiltroGaussianoEcualizada, "Imagen filtro gaussiano ecualizado:");
+    imprimirTamanioImagen(imgSobel, "Imagen Sobel:");
+    imprimirTamanioImagen(imgNonMaxSupr, "Imagen NonMaxSupr:");
+    imprimirTamanioImagen(imgHysteresis, "Imagen Hysteresis:");
 
-    //Imprimimos
+    //Imprimimos imagenes
     namedWindow("Imagen original", WINDOW_AUTOSIZE);
     imshow("Imagen original", imagenOriginal);
 
