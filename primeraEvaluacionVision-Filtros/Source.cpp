@@ -1,4 +1,4 @@
-#define _USE_MATH_DEFINES
+ï»¿#define _USE_MATH_DEFINES
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/opencv.hpp>
@@ -240,37 +240,37 @@ vector<vector<double>> calcularDirecciones(Mat imagenGx, Mat imagenGy) {
 
 Mat nonMaxSupression(Mat imagenSobel, vector<vector<double>> direcciones) {
     //Me base en el algoritmo planteado en el siguiente enlace
-    //https://towardsdatascience.com/canny-edge-detection-step-by-step-in-python-computer-vision-b49c3a2d8123
+
 
     int filas = imagenSobel.rows;
     int columnas = imagenSobel.cols;
 
     Mat imgNonMaxSupr(filas, columnas, CV_8UC1);
 
-    for (int i = 0; i < filas; i++) {
-        for (int j = 0; j < columnas; j++) {
+    for (int i = 1; i < filas - 1; i++) {
+        for (int j = 1; j < columnas - 1; j++) {
             int primerLado = 255;
             int segundoLado = 255;
 
-            //si el angulo es 0° o bien 180°, obtiene las intensidades de izquierda y derecha
+            //si el angulo es 0Â° o bien 180Â°, obtiene las intensidades de izquierda y derecha
             if ((0 <= direcciones[i][j] < 22.5) || (157.5 <= direcciones[i][j] <= 180)) {
                 primerLado = imagenSobel.at<uchar>(Point(i, j + 1));
                 segundoLado = imagenSobel.at<uchar>(Point(i, j - 1));
             }
-                
-            //para 45° las esquinas
-            else if( 22.5 <= direcciones[i][j] < 67.5) {
+
+            //para 45Â° las esquinas
+            else if (22.5 <= direcciones[i][j] < 67.5) {
                 primerLado = imagenSobel.at<uchar>(Point(i + 1, j - 1));
                 segundoLado = imagenSobel.at<uchar>(Point(i - 1, j + 1));
             }
 
-            //para 90° arriba y abajo
+            //para 90Â° arriba y abajo
             else if (67.5 <= direcciones[i][j] < 112.5) {
                 primerLado = imagenSobel.at<uchar>(Point(i + 1, j));
                 segundoLado = imagenSobel.at<uchar>(Point(i - 1, j));
             }
 
-            //para 135° las otras esquinas 
+            //para 135Â° las otras esquinas 
             else if (112.5 <= direcciones[i][j] < 157.5) {
                 primerLado = imagenSobel.at<uchar>(Point(i - 1, j - 1));
                 segundoLado = imagenSobel.at<uchar>(Point(i + 1, j + 1));
@@ -306,34 +306,35 @@ int getIntensidadMaxima(Mat imagen) {
     return max;
 }
 
-Mat hysteresis(Mat imgNonMaxSupr, float upperThresholdPorcentaje, float lowThresholdPorcentaje) {
+
+Mat umbralHysteresis(Mat imgNonMaxSupr, float upperThresholdPorcentaje, float lowThresholdPorcentaje) {
     int filas = imgNonMaxSupr.rows;
     int columnas = imgNonMaxSupr.cols;
-        
+
     Mat imgHysteresis(filas, columnas, CV_8UC1);
 
-    float upperThreshold, lowThreshold; 
+    float upperThreshold, lowThreshold;
 
     upperThreshold = getIntensidadMaxima(imgNonMaxSupr) * upperThresholdPorcentaje; //90% of max
     lowThreshold = upperThreshold * lowThresholdPorcentaje; //35% of upper
+
 
     //de acuerdo con las diapositivas
     int weak = lowThreshold;
     int strong = 255;
     int irrelevant = 0;
 
-
     for (int i = 0; i < filas; i++) {
         for (int j = 0; j < columnas; j++) {
 
             //condiciones de ejemplo diapostivas
-            if (imgNonMaxSupr.at<uchar>(Point(i, j)) >= upperThreshold) {
+            if (float(imgNonMaxSupr.at<uchar>(Point(i, j))) >= upperThreshold) {
                 imgHysteresis.at<uchar>(Point(i, j)) = strong;
             }
-            /*else if (lowThreshold < imgNonMaxSupr.at<uchar>(Point(i, j)) < upperThreshold) {
+            else if ((lowThreshold < float(imgNonMaxSupr.at<uchar>(Point(i, j)))) && (float(imgNonMaxSupr.at<uchar>(Point(i, j))) < upperThreshold)) {
                 imgHysteresis.at<uchar>(Point(i, j)) = weak;
-            }*/
-            else{
+            }
+            else {
                 imgHysteresis.at<uchar>(Point(i, j)) = irrelevant;
             }
         }
@@ -341,6 +342,46 @@ Mat hysteresis(Mat imgNonMaxSupr, float upperThresholdPorcentaje, float lowThres
 
     return imgHysteresis;
 }
+
+Mat hysteresis( Mat imgHysteresis, float upperThresholdPorcentaje, float lowThresholdPorcentaje, Mat imgNonMaxSupr ){
+    int filas = imgHysteresis.rows;
+    int columnas = imgHysteresis.cols;
+
+    float upperThreshold, lowThreshold;
+
+    upperThreshold = getIntensidadMaxima(imgNonMaxSupr) * upperThresholdPorcentaje; //90% of max
+    lowThreshold = upperThreshold * lowThresholdPorcentaje; //35% of upper
+
+    Mat imgHysteresisFinal(filas, columnas, CV_32F);
+
+    for (int i = 0; i < filas; i++)
+    {
+        for (int j = 0; j < columnas; j++)
+        {
+            if (float(imgHysteresis.at<uchar>(Point(j + 1, i + 1))) == round(lowThreshold))
+            {
+                //Verificamos si los vecinos son fuertes
+                if (float(imgHysteresis.at<uchar>(Point(j + 1, (i - 1) + 1))) == 255 || float(imgHysteresis.at<uchar>(Point(j + 1, (i + 1) + 1))) == 255 ||
+                    float(imgHysteresis.at<uchar>(Point((j - 1) + 1, i + 1))) == 255 || float(imgHysteresis.at<uchar>(Point((j + 1) + 1, i + 1))) == 255 ||
+                    float(imgHysteresis.at<uchar>(Point((j - 1) + 1, (i + 1) + 1))) == 255 || float(imgHysteresis.at<uchar>(Point((j + 1) + 1, (i - 1) + 1))) == 255 ||
+                    float(imgHysteresis.at<uchar>(Point((j - 1) + 1, (i - 1) + 1))) == 255 || float(imgHysteresis.at<uchar>(Point((j + 1) + 1, (i + 1) + 1))) == 255) {
+
+                    imgHysteresisFinal.at<float>(Point(j, i)) = 255;
+                }
+                else {
+                    imgHysteresisFinal.at<float>(Point(j, i)) = 0;
+                }
+
+            }
+            else {
+                imgHysteresisFinal.at<float>(Point(j, i)) = float(imgHysteresis.at<uchar>(Point(j + 1, i + 1)));
+            }
+        }
+    }
+
+    return imgHysteresisFinal;
+}
+
 
 void imprimirTamanioImagen(Mat imagen, string tituloImagen) {
     cout << tituloImagen << endl;
@@ -359,7 +400,7 @@ int main()
     Mat imagenOriginal, imagenEscGrises;
     char imageName[] = "lena.png";
 
-    cout << "Inserte el tamaño de su mascara gaussiana cuadrada: ";
+    cout << "Inserte el tamaÃ±o de su mascara gaussiana cuadrada: ";
     cin >> mascSize;
     cout << "Inserte el valor de sigma: ";
     cin >> sigma;
@@ -403,25 +444,28 @@ int main()
     Mat imagenFiltroAplicadoGy = aplicarFiltroImagen(imagenFiltroGaussianoEcualizada, matrizConBordes, Gy, 3);
 
     //Aplicamos el modulo de G de la sumatoria de ambas imagenes Gx y Gy
-    Mat imgSobel = imagenFiltroSobel(imagenFiltroAplicadoGy, imagenFiltroAplicadoGx);
+    Mat imagenSobel = imagenFiltroSobel(imagenFiltroAplicadoGy, imagenFiltroAplicadoGx);
 
     //Calculamos la matriz de direcciones
     vector<vector<double>> direcciones = calcularDirecciones(imagenFiltroAplicadoGx, imagenFiltroAplicadoGy);
 
     //Obtenemos el nonMaxSupression
-    Mat imgNonMaxSupr = nonMaxSupression(imgSobel, direcciones);
+    Mat imagenNonMaxSupr = nonMaxSupression(imagenSobel, direcciones);
 
     //Realizamos la hysteresis
-    Mat imgHysteresis = hysteresis(imgNonMaxSupr, 0.9, 0.35);
+    Mat imgUmbralHysteresis = umbralHysteresis(imagenNonMaxSupr, 0.5, 0.5);
+    Mat imgHysteresis = hysteresis(imgUmbralHysteresis, 0.5, 0.5, imagenNonMaxSupr);
 
-    //Imprimimos tamaños de imagenes
+    //Imprimimos tamaÃ±os de imagenes
     imprimirTamanioImagen(imagenOriginal, "Imagen original:");
     imprimirTamanioImagen(imagenEscGrises, "Imagen escala de grises:");
     imprimirTamanioImagen(imagenFiltroGaussiano, "Imagen filtro gaussiano:");
     imprimirTamanioImagen(imagenFiltroGaussianoEcualizada, "Imagen filtro gaussiano ecualizado:");
-    imprimirTamanioImagen(imgSobel, "Imagen Sobel:");
-    imprimirTamanioImagen(imgNonMaxSupr, "Imagen NonMaxSupr:");
+    imprimirTamanioImagen(imagenSobel, "Imagen Sobel:");
+    imprimirTamanioImagen(imagenNonMaxSupr, "Imagen NonMaxSupr:");
+    imprimirTamanioImagen(imgUmbralHysteresis, "Imagen umbral Hysteresis:");
     imprimirTamanioImagen(imgHysteresis, "Imagen Hysteresis:");
+
 
     //Imprimimos imagenes
     namedWindow("Imagen original", WINDOW_AUTOSIZE);
@@ -446,10 +490,13 @@ int main()
     imshow("Imagen con filtro Gy", imagenFiltroAplicadoGy);*/
 
     namedWindow("Imagen filtro sobel G", WINDOW_AUTOSIZE);
-    imshow("Imagen filtro sobel G", imgSobel);
+    imshow("Imagen filtro sobel G", imagenSobel);
 
     namedWindow("Imagen nonMax", WINDOW_AUTOSIZE);
-    imshow("Imagen nonMax", imgNonMaxSupr);
+    imshow("Imagen nonMax", imagenNonMaxSupr);
+
+    namedWindow("Imagen umbral hysteresis", WINDOW_AUTOSIZE);
+    imshow("Imagen umbral hysteresis", imgUmbralHysteresis);
 
     namedWindow("Imagen hysteresis", WINDOW_AUTOSIZE);
     imshow("Imagen hysteresis", imgHysteresis);
